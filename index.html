@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama & Atlas Clínico Completo de Protozoarios Intestinales</title>
+    <!-- Tailwind CSS desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CSS Nativo / Fallback para ejecución local */
+        :root {
+            --bg-main: #020617;
+            --bg-card: #0f172a;
+            --border-card: #1e293b;
+            --teal-accent: #14b8a6;
+            --amber-accent: #f59e0b;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-inner { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        
+        @keyframes pulse-success {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+        .matched-card .card-inner { animation: pulse-success 0.8s ease-in-out; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
+
+    <!-- Encabezado y Navegación -->
+    <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-30 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-teal-500/10 border border-teal-500/30 p-2 rounded-xl text-2xl flex-shrink-0">🔬</div>
+                <div>
+                    <h1 class="text-base sm:text-lg md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-400 leading-tight">
+                        Protozoarios Intestinales
+                    </h1>
+                    <p class="text-[11px] text-slate-400">Memorama & Atlas Diagnóstico - Importancia Clínica, Tamaño y Patología (CDC DPDx)</p>
+                </div>
+            </div>
+
+            <!-- Selector de Modos -->
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 w-full sm:w-auto justify-center gap-1">
+                <button id="nav-game" onclick="switchMode('game')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all bg-teal-500 text-slate-950 shadow-md">
+                    🎮 Memorama
+                </button>
+                <button id="nav-atlas" onclick="switchMode('atlas')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all text-slate-400 hover:text-white">
+                    📖 Atlas Diagnóstico y Clínico
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- VISTA 1: MEMORAMA -->
+    <section id="game-view" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col">
+        <!-- Panel Estadísticas -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+            <div class="flex items-center gap-3 sm:gap-6 flex-wrap">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Estudiante</span>
+                    <input type="text" id="student-name" placeholder="Tu Nombre..." class="bg-slate-950 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg text-slate-200 outline-none focus:border-teal-500 w-36 sm:w-48" />
+                </div>
+                <div class="h-8 w-px bg-slate-800 hidden sm:block"></div>
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Tiempo</span>
+                    <span id="timer" class="text-lg sm:text-xl font-mono font-bold text-cyan-400">00:00</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800 hidden sm:block"></div>
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Intentos</span>
+                    <span id="moves" class="text-lg sm:text-xl font-bold text-amber-400">0</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800 hidden sm:block"></div>
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Parejas</span>
+                    <span id="matches" class="text-lg sm:text-xl font-bold text-emerald-400">0 / 8</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <select id="difficulty-select" onchange="initGame()" class="bg-slate-950 border border-slate-700 text-xs text-slate-300 font-semibold px-3 py-2 rounded-lg outline-none focus:border-teal-500">
+                    <option value="6">6 Parejas</option>
+                    <option value="8" selected>8 Parejas</option>
+                    <option value="12">12 Parejas</option>
+                    <option value="16">16 Parejas</option>
+                    <option value="20">20 Parejas</option>
+                    <option value="22">Todas (22 Formas Evolutivas)</option>
+                </select>
+                <button onclick="initGame()" class="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg transition transform active:scale-95 shadow-md">
+                    Reiniciar
+                </button>
+            </div>
+        </div>
+
+        <!-- Tablero de Cartas -->
+        <div id="game-board" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 flex-1"></div>
+    </section>
+
+    <!-- VISTA 2: ATLAS -->
+    <section id="atlas-view" class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 hidden">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg">
+            <div>
+                <h2 class="text-lg font-bold text-white">Atlas Diagnóstico & Importancia Clínica</h2>
+                <p class="text-xs text-slate-400">Morfología, patología, cuadros clínicos y tinción diagnóstica</p>
+            </div>
+            <div class="flex gap-1.5 flex-wrap">
+                <button onclick="filterAtlas('all')" class="atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-500 text-slate-950" data-filter="all">Todos</button>
+                <button onclick="filterAtlas('Trofozoíto')" class="atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="Trofozoíto">Trofozoítos</button>
+                <button onclick="filterAtlas('Quiste')" class="atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="Quiste">Quistes</button>
+                <button onclick="filterAtlas('Ooquiste')" class="atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="Ooquiste">Ooquistes</button>
+            </div>
+        </div>
+
+        <div id="atlas-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- Modal de Acierto / Detalle -->
+    <div id="info-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-teal-500/40 p-5 sm:p-6 rounded-2xl max-w-lg w-full shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3 mb-3">
+                <span class="text-2xl">🔬</span>
+                <div>
+                    <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">¡Pareja Encontrada!</span>
+                    <h3 id="modal-title" class="text-base font-bold text-white">---</h3>
+                </div>
+            </div>
+
+            <div id="modal-img-container" class="w-full h-36 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 mb-3 flex items-center justify-center p-2 flex-shrink-0"></div>
+
+            <div class="space-y-2 mb-4 overflow-y-auto pr-1 flex-1 text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Rango de Tamaño</span>
+                        <span id="modal-size" class="font-bold text-amber-300">--</span>
+                    </div>
+                    <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Tinción de Elección</span>
+                        <span id="modal-stain" class="font-bold text-cyan-300">--</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <span class="text-[10px] text-teal-400 font-bold uppercase block">Criterios Morfológicos Clave</span>
+                    <p id="modal-desc" class="text-slate-300 leading-relaxed">---</p>
+                </div>
+
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <span class="text-[10px] text-rose-400 font-bold uppercase block">Patología e Importancia Médica</span>
+                    <p id="modal-pathology" class="text-slate-300 leading-relaxed">---</p>
+                </div>
+            </div>
+
+            <button onclick="closeInfoModal()" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2.5 rounded-lg text-xs transition flex-shrink-0">
+                Continuar Jugando
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Victoria Final -->
+    <div id="win-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-emerald-500/80 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center shadow-2xl">
+            <div class="text-5xl mb-3">🏆</div>
+            <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 mb-1">¡Memorama Completado!</h2>
+            <p class="text-slate-400 text-xs mb-4">Has identificado todas las estructuras y conceptos clínicos del ejercicio.</p>
+            
+            <div class="bg-slate-950 p-4 rounded-xl mb-5 border border-slate-800 space-y-2 text-left text-xs">
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span class="text-slate-400">Estudiante:</span>
+                    <span id="final-student" class="font-bold text-white">---</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span class="text-slate-400">Tiempo empleado:</span>
+                    <span id="final-time" class="font-mono font-bold text-cyan-400">00:00</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span class="text-slate-400">Movimientos / Intentos:</span>
+                    <span id="final-moves" class="font-bold text-amber-400">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Efectividad Estimada:</span>
+                    <span id="final-accuracy" class="font-bold text-emerald-400">100%</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                <button onclick="downloadReport()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2">
+                    <span>📄</span> Descargar Comprobante MS Teams (.txt)
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="switchMode('atlas'); document.getElementById('win-modal').classList.add('hidden')" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs transition">
+                        Ver Atlas
+                    </button>
+                    <button onclick="initGame()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs transition">
+                        Reiniciar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // BASE DE DATOS COMPLETA CON PATOLOGÍA E IMPORTANCIA CLÍNICA
+        const protozoaData = [
+            {
+                id: 'giardia_t',
+                name: 'Giardia duodenalis',
+                stage: 'Trofozoíto',
+                size: '10 - 20 µm (hab. 12-15 µm)',
+                stain: 'Tricrómica / Lugol',
+                keyFeatures: 'Piriforme, simetría bilateral, 2 núcleos anteriores ("cara de búho"), disco suctorio ventral y 8 flagelos. Movimiento en "caída de hoja".',
+                pathology: 'Agente de Giardiasis. Forma metabólicamente activa que se adhiere mecánicamente mediante el disco ventral al epitelio del duodeno y yeyuno, causando aplanamiento de vellosidades, síndrome de mala absorción, diarrea esteatorreica y dolor epigástrico.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M50,10 C20,10 15,60 25,95 C35,115 50,118 50,118 C50,118 65,115 75,95 C85,60 80,10 50,10 Z" fill="#0d9488" stroke="#5eead4" stroke-width="2"/><ellipse cx="50" cy="40" rx="25" ry="20" fill="#115e59" stroke="#2dd4bf" stroke-width="1.5"/><circle cx="38" cy="38" r="6" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="38" cy="38" r="2" fill="#a7f3d0"/><circle cx="62" cy="38" r="6" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="62" cy="38" r="2" fill="#a7f3d0"/><path d="M50,30 L50,115 M40,65 Q50,70 60,65" stroke="#fde047" stroke-width="2" fill="none"/><path d="M35,20 C15,10 5,25 10,40 M65,20 C85,10 95,25 90,40 M30,105 C10,110 5,120 2,120 M70,105 C90,110 95,120 98,120" stroke="#a7f3d0" stroke-width="1.5" fill="none"/></svg>`
+            },
+            {
+                id: 'giardia_c',
+                name: 'Giardia duodenalis',
+                stage: 'Quiste',
+                size: '8 - 19 µm (hab. 11-12 µm)',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Ovalado a elipsoidal con doble pared definida. Quiste maduro posee 4 núcleos, axonemas internos y restos de cuerpos medianos.',
+                pathology: 'Forma infectante y de resistencia ambiental responsable de la transmisión fecal-oral e hídrica. Resiste la cloración convencional del agua de consumo público.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><ellipse cx="50" cy="60" rx="35" ry="45" fill="#134e4a" stroke="#2dd4bf" stroke-width="3"/><circle cx="35" cy="40" r="4" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="35" cy="40" r="1.5" fill="#fff"/><circle cx="65" cy="40" r="4" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="65" cy="40" r="1.5" fill="#fff"/><circle cx="38" cy="55" r="4" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="38" cy="55" r="1.5" fill="#fff"/><circle cx="62" cy="55" r="4" fill="#042f2e" stroke="#5eead4" stroke-width="1"/><circle cx="62" cy="55" r="1.5" fill="#fff"/><path d="M45,30 Q55,60 42,90 M52,30 Q62,60 50,90" stroke="#fde047" stroke-width="2" fill="none"/></svg>`
+            },
+            {
+                id: 'ehistolytica_t',
+                name: 'Entamoeba histolytica',
+                stage: 'Trofozoíto',
+                size: '10 - 60 µm (hab. 12-15 µm)',
+                stain: 'Tricrómica de Wheatley',
+                keyFeatures: 'Ectoplasma hialino, 1 núcleo con cariosoma central compacto y cromatina periférica fina. Muestra eritrofagocitosis (patognomónico).',
+                pathology: 'Agente patógeno primario invasivo de Amebiasis. Destruye el tejido intestinal mediante proteasas líticas (histolisis), produciendo úlceras en "botón de camisa" en el colon, disentería amebiana y eventual diseminación extraintestinal a hígado (absceso hepático amebiano).',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M20,50 Q10,20 40,20 Q80,10 85,40 Q95,80 65,95 Q30,110 15,80 Z" fill="#065f46" stroke="#34d399" stroke-width="2"/><circle cx="45" cy="45" r="9" fill="#022c22" stroke="#6ee7b7" stroke-width="1.5"/><circle cx="45" cy="45" r="2.5" fill="#fde047"/><circle cx="30" cy="70" r="6" fill="#f43f5e" stroke="#fda4af" stroke-width="1"/><circle cx="42" cy="80" r="5" fill="#f43f5e" stroke="#fda4af" stroke-width="1"/><circle cx="68" cy="60" r="6.5" fill="#f43f5e" stroke="#fda4af" stroke-width="1"/></svg>`
+            },
+            {
+                id: 'ehistolytica_c',
+                name: 'Entamoeba histolytica',
+                stage: 'Quiste',
+                size: '10 - 20 µm (hab. 12-15 µm)',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Esférico con 4 núcleos maduros de cariosoma central. Barras cromatoidales con extremos romos o redondeados (en cigarro).',
+                pathology: 'Forma de resistencia infectante eliminada en heces formadas o semiformadas. Es la estructura responsable de la diseminación endémica por contaminación de agua y alimentos.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="40" fill="#064e3b" stroke="#34d399" stroke-width="3"/><circle cx="35" cy="45" r="5" fill="#022c22" stroke="#6ee7b7" stroke-width="1"/><circle cx="35" cy="45" r="1.5" fill="#fde047"/><circle cx="65" cy="45" r="5" fill="#022c22" stroke="#6ee7b7" stroke-width="1"/><circle cx="65" cy="45" r="1.5" fill="#fde047"/><circle cx="38" cy="72" r="5" fill="#022c22" stroke="#6ee7b7" stroke-width="1"/><circle cx="38" cy="72" r="1.5" fill="#fde047"/><circle cx="62" cy="72" r="5" fill="#022c22" stroke="#6ee7b7" stroke-width="1"/><circle cx="62" cy="72" r="1.5" fill="#fde047"/><rect x="40" y="83" width="22" height="6" rx="3" fill="#6ee7b7" stroke="#047857" stroke-width="1"/></svg>`
+            },
+            {
+                id: 'ecoli_t',
+                name: 'Entamoeba coli',
+                stage: 'Trofozoíto',
+                size: '15 - 50 µm (hab. 20-25 µm)',
+                stain: 'Tricrómica / Lugol',
+                keyFeatures: 'Ameboide, citoplasma granular vacuolado "sucio" con pseudópodos cortos y romos. 1 núcleo con cariosoma grande excéntrico y cromatina gruesa e irregular.',
+                pathology: 'Comensal del intestino grueso. No invasiva ni patógena. Su importancia médica radica en evitar diagnósticos erróneos y tratamientos innecesarios al diferenciarla de E. histolytica.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M25,30 Q10,60 30,90 Q60,110 80,80 Q95,50 70,25 Q45,10 25,30 Z" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/><circle cx="55" cy="45" r="10" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1.5"/><circle cx="60" cy="45" r="3" fill="#fde047"/><path d="M48,37 A7,7 0 0,1 62,37" stroke="#93c5fd" stroke-width="2" fill="none"/></svg>`
+            },
+            {
+                id: 'ecoli_c',
+                name: 'Entamoeba coli',
+                stage: 'Quiste',
+                size: '10 - 35 µm (hab. 15-25 µm)',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Quiste esférico grande con 8 núcleos maduros con cariosomas excéntricos. Barras cromatoidales con extremos puntiagudos en astilla.',
+                pathology: 'Comensal no patógeno. Su hallazgo microscópico en heces es un indicador de contaminación fecal de agua o alimentos y malas condiciones higiénico-sanitarias.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="42" fill="#1e3a8a" stroke="#60a5fa" stroke-width="3"/><circle cx="30" cy="38" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="32" cy="38" r="1" fill="#fde047"/><circle cx="50" cy="32" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="52" cy="32" r="1" fill="#fde047"/><circle cx="70" cy="38" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="72" cy="38" r="1" fill="#fde047"/><circle cx="28" cy="58" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="30" cy="58" r="1" fill="#fde047"/><circle cx="72" cy="58" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="74" cy="58" r="1" fill="#fde047"/><circle cx="35" cy="78" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="37" cy="78" r="1" fill="#fde047"/><circle cx="55" cy="82" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="57" cy="82" r="1" fill="#fde047"/><circle cx="68" cy="75" r="4" fill="#1e1b4b" stroke="#93c5fd" stroke-width="1"/><circle cx="70" cy="75" r="1" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'crypto_o',
+                name: 'Cryptosporidium hominis / parvum',
+                stage: 'Ooquiste',
+                size: '4 - 6 µm',
+                stain: 'Ziehl-Neelsen Modificada / Kinyoun',
+                keyFeatures: 'Ooquiste pequeño esférico, ácido-alcohol resistente positivo (rojo/fucsia). Contiene 4 esporozoítos libres (sin esporocistos) y cuerpo residual prominente.',
+                pathology: 'Agente de Criptosporidiosis. Causa gastroenteritis acuosa autolimitada en inmunocompetentes, pero cuadros de diarrea profusa, masiva, crónica y potencialmente mortal en pacientes inmunocomprometidos (VIH/SIDA).',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="28" fill="#be123c" stroke="#fb7185" stroke-width="3"/><path d="M38,50 Q50,42 60,52 M35,62 Q50,55 62,65 M40,72 Q52,65 58,75" stroke="#fecdd3" stroke-width="2" fill="none"/><circle cx="56" cy="68" r="4" fill="#881337"/></svg>`
+            },
+            {
+                id: 'crypto_t',
+                name: 'Cryptosporidium hominis / parvum',
+                stage: 'Trofozoíto',
+                size: '2 - 5 µm',
+                stain: 'Microscopía Electrónica / Histología',
+                keyFeatures: 'Diminuta forma epicelular (intracelular pero extracitoplasmática) anclada al borde en cepillo del enterocito mediante un orgánulo alimentador (feeder organelle).',
+                pathology: 'Fase de multiplicación intracelular en las microvellosidades intestinales. Destruye el borde en cepillo, provocando mala absorción de nutrientes, atrofia vellositaria e hipersecreción de fluidos.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><rect x="15" y="80" width="70" height="20" fill="#334155"/><path d="M15,80 L20,60 L25,80 L30,60 L35,80 L40,60 L45,80 L50,60 L55,80 L60,60 L65,80 L70,60 L75,80 L80,60 L85,80" stroke="#94a3b8" stroke-width="2" fill="none"/><circle cx="50" cy="45" r="16" fill="#be123c" stroke="#fb7185" stroke-width="2"/><circle cx="50" cy="45" r="4" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'ehartmanni_t',
+                name: 'Entamoeba hartmanni',
+                stage: 'Trofozoíto',
+                size: '4 - 12 µm (<12 µm)',
+                stain: 'Tricrómica de Wheatley',
+                keyFeatures: 'Idéntico a E. histolytica pero de menor tamaño (<12 µm). 1 núcleo con cariosoma pequeño central. Ausencia total de eritrofagocitosis.',
+                pathology: 'Ameba comensal no patógena del intestino grueso. Su diagnóstico diferencial microscópico es crucial para evitar confundirla con E. histolytica en el laboratorio.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M30,40 Q20,20 50,25 Q75,20 75,50 Q80,80 55,85 Q30,95 25,65 Z" fill="#047857" stroke="#34d399" stroke-width="1.5"/><circle cx="48" cy="50" r="6" fill="#022c22" stroke="#6ee7b7" stroke-width="1"/><circle cx="48" cy="50" r="1.5" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'ehartmanni_c',
+                name: 'Entamoeba hartmanni',
+                stage: 'Quiste',
+                size: '5 - 10 µm',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Quiste pequeño esférico (<10 µm) que alberga de 1 a 4 núcleos y cuerpos cromatoidales de extremos redondeados.',
+                pathology: 'Estructura no patógena de transmisión fecal. Es considerada un marcador epidemiológico de higiene comunitaria deficiente.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="30" fill="#047857" stroke="#34d399" stroke-width="2.5"/><circle cx="40" cy="50" r="3.5" fill="#022c22" stroke="#6ee7b7" stroke-width="0.8"/><circle cx="40" cy="50" r="1" fill="#fde047"/><circle cx="60" cy="50" r="3.5" fill="#022c22" stroke="#6ee7b7" stroke-width="0.8"/><circle cx="60" cy="50" r="1" fill="#fde047"/><circle cx="42" cy="68" r="3.5" fill="#022c22" stroke="#6ee7b7" stroke-width="0.8"/><circle cx="42" cy="68" r="1" fill="#fde047"/><circle cx="58" cy="68" r="3.5" fill="#022c22" stroke="#6ee7b7" stroke-width="0.8"/><circle cx="58" cy="68" r="1" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'enana_t',
+                name: 'Endolimax nana',
+                stage: 'Trofozoíto',
+                size: '6 - 15 µm',
+                stain: 'Tricrómica de Wheatley',
+                keyFeatures: 'Ameba pequeña con citoplasma muy vacuolado. 1 núcleo con cariosoma grande, irregular y excéntrico. Carece de cromatina periférica sobre la membrana nuclear.',
+                pathology: 'Protozoo comensal no patógeno del ciego y colon ascendente. Vive del material bacteriano y detritos sin invadir la mucosa intestinal.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M30,35 Q15,55 35,80 Q65,95 75,70 Q85,40 60,25 Z" fill="#65a30d" stroke="#a3e635" stroke-width="2"/><circle cx="52" cy="48" r="7" fill="#1a2e05" stroke="#bef264" stroke-width="1"/><rect x="50" y="45" width="5" height="5" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'enana_c',
+                name: 'Endolimax nana',
+                stage: 'Quiste',
+                size: '5 - 10 µm',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Quiste pequeño ovoide. Posee 4 núcleos diminutos semejantes a "puntos". Carece por completo de cuerpos cromatoidales.',
+                pathology: 'Forma infectante de E. nana. Su identificación en coproparasitoscópicos confirma exposición por vía fecal-oral sin requerir tratamiento antiparasitario.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><ellipse cx="50" cy="60" rx="26" ry="34" fill="#4d7c0f" stroke="#a3e635" stroke-width="2.5"/><circle cx="42" cy="45" r="2" fill="#fde047"/><circle cx="58" cy="45" r="2" fill="#fde047"/><circle cx="42" cy="72" r="2" fill="#fde047"/><circle cx="58" cy="72" r="2" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'iodamoeba_t',
+                name: 'Iodamoeba bütschlii',
+                stage: 'Trofozoíto',
+                size: '8 - 20 µm (hab. 12-15 µm)',
+                stain: 'Tricrómica de Wheatley',
+                keyFeatures: '1 núcleo con cariosoma grande y central teñido de rojo. Gránulos acromáticos alrededor del cariosoma. Sin cromatina periférica. Citoplasma granular grueso.',
+                pathology: 'Ameba comensal no patógena habitual de la luz del intestino grueso. No produce daño hístico ni sintomatología digestiva.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M25,40 Q15,70 40,90 Q75,100 80,65 Q85,30 55,20 Z" fill="#c026d3" stroke="#f0abfc" stroke-width="2"/><circle cx="50" cy="50" r="9" fill="#701a75" stroke="#f5d0fe" stroke-width="1"/><circle cx="50" cy="50" r="4" fill="#e11d48"/></svg>`
+            },
+            {
+                id: 'iodamoeba_c',
+                name: 'Iodamoeba bütschlii',
+                stage: 'Quiste',
+                size: '5 - 10 µm (hab. 10-12 µm)',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Quiste con 1 solo núcleo de cariosoma grande excéntrico. Posee una gran masa compacta de glucógeno teñida de pardo/marrón.',
+                pathology: 'Forma de resistencia de I. bütschlii. Característica por su vacuola de glucógeno prominente teñida con yodo. No patógena.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><ellipse cx="50" cy="60" rx="30" ry="36" fill="#a21caf" stroke="#f0abfc" stroke-width="2.5"/><circle cx="42" cy="42" r="6" fill="#701a75" stroke="#f5d0fe" stroke-width="1"/><circle cx="44" cy="42" r="2.5" fill="#e11d48"/><ellipse cx="58" cy="72" rx="16" ry="12" fill="#78350f" stroke="#d97706" stroke-width="1.5"/></svg>`
+            },
+            {
+                id: 'cystoisospora_oinm',
+                name: 'Cystoisospora belli',
+                stage: 'Ooquiste Inmaduro',
+                size: '25 - 30 µm x 10 - 19 µm',
+                stain: 'Ziehl-Neelsen / Fresco',
+                keyFeatures: 'Ooquiste elipsoidal alargado de pared lisa doble hialina. Se elimina inmaduro en materia fecal conteniendo 1 solo esporoblasto central.',
+                pathology: 'Agente patógeno primario y oportunista de Cistoisosporiasis. Infecta células del epitelio del intestino delgado provocando necrosis epitelial, diarrea acuosa intensa y síndrome de mala absorción.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M50,15 C30,15 28,45 28,60 C28,75 30,105 50,105 C70,105 72,75 72,60 C72,45 70,15 50,15 Z" fill="#ea580c" stroke="#ffedd5" stroke-width="2.5"/><circle cx="50" cy="60" r="16" fill="#7c2d12" stroke="#fed7aa" stroke-width="1.5"/></svg>`
+            },
+            {
+                id: 'cystoisospora_omad',
+                name: 'Cystoisospora belli',
+                stage: 'Ooquiste Esporulado',
+                size: '25 - 30 µm x 10 - 19 µm',
+                stain: 'Ziehl-Neelsen / Autofluorescencia UV',
+                keyFeatures: 'Ooquiste maduro tras 1-2 días en ambiente. Contiene 2 esporocistos, cada uno con 4 esporozoítos (total 8 esporozoítos). Autofluorescente bajo luz UV.',
+                pathology: 'Forma infectante que contamina agua y alimentos. En pacientes inmunocomprometidos (VIH/SIDA) provoca diarrea crónica grave, deshidratación severa y pérdida de peso masiva.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M50,15 C30,15 28,45 28,60 C28,75 30,105 50,105 C70,105 72,75 72,60 C72,45 70,15 50,15 Z" fill="#ea580c" stroke="#ffedd5" stroke-width="2.5"/><circle cx="50" cy="42" r="11" fill="#7c2d12" stroke="#fed7aa" stroke-width="1"/><circle cx="50" cy="78" r="11" fill="#7c2d12" stroke="#fed7aa" stroke-width="1"/></svg>`
+            },
+            {
+                id: 'cyclospora_oinm',
+                name: 'Cyclospora cayetanensis',
+                stage: 'Ooquiste Inmaduro',
+                size: '7.5 - 10 µm',
+                stain: 'Ziehl-Neelsen Mod. / Luz UV',
+                keyFeatures: 'Ooquiste esférico de pared definida y contenido refráctil. Se elimina inmaduro en heces (no infectante). Muestra tinción variable y autofluorescencia UV.',
+                pathology: 'Causa de Ciclosporiasis. Infecta los enterocitos del yeyuno, causando aplanamiento de vellosidades e hiperplasia de criptas con diarrea acuosa prolongada, astenia y meteorismo.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="32" fill="#0284c7" stroke="#38bdf8" stroke-width="3"/><circle cx="50" cy="60" r="18" fill="#0369a1" stroke="#bae6fd" stroke-width="1"/></svg>`
+            },
+            {
+                id: 'cyclospora_omad',
+                name: 'Cyclospora cayetanensis',
+                stage: 'Ooquiste Esporulado',
+                size: '8 - 10 µm',
+                stain: 'Microscopía DIC / Luz UV',
+                keyFeatures: 'Ooquiste maduro tras esporulación ambiental (requiere días o semanas). Contiene 2 esporocistos, cada uno con 2 esporozoítos (total 4 esporozoítos).',
+                pathology: 'Forma infectante vehiculizada principalmente por frutos rojos frescos, hortalizas y agua contaminada. Es causa importante de diarrea de los viajeros y brotes epidémicos.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="32" fill="#0284c7" stroke="#38bdf8" stroke-width="3"/><circle cx="40" cy="60" r="10" fill="#0369a1" stroke="#bae6fd" stroke-width="1"/><circle cx="60" cy="60" r="10" fill="#0369a1" stroke="#bae6fd" stroke-width="1"/></svg>`
+            },
+            {
+                id: 'blasto_v',
+                name: 'Blastocystis hominis',
+                stage: 'Forma Vacuolar',
+                size: '5 - 15 µm',
+                stain: 'Tricrómica / Lugol',
+                keyFeatures: 'Gran vacuola central que ocupa el 85% del volumen celular, comprimiendo los núcleos (2 a 4) en el delgado borde citoplasmático periférico.',
+                pathology: 'Agente de Blastocistosis. Patógeno facultativo/discutido. En altas concentraciones o desequilibrio de microbiota (disbiosis), genera diarrea acuosa, meteorismo, dolor abdominal y síndrome de intestino irritable.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="38" fill="#0284c7" stroke="#38bdf8" stroke-width="3"/><circle cx="50" cy="60" r="28" fill="#0369a1"/><circle cx="24" cy="50" r="3" fill="#e0f2fe"/><circle cx="76" cy="50" r="3" fill="#e0f2fe"/><circle cx="50" cy="24" r="3" fill="#e0f2fe"/><circle cx="50" cy="96" r="3" fill="#e0f2fe"/></svg>`
+            },
+            {
+                id: 'blasto_a',
+                name: 'Blastocystis hominis',
+                stage: 'Forma Ameboide',
+                size: '10 - 15 µm',
+                stain: 'Montaje en Húmedo / Tricrómica',
+                keyFeatures: 'Forma irregular con pseudópodos activos. Altamente fagocítica (ingiere bacterias). Se observa principalmente en muestras fecales sintomáticas.',
+                pathology: 'Forma fuertemente asociada a la adhesión mucosa y procesos inflamatorios agudos del colon en pacientes con manifestaciones clínicas notorias.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><path d="M25,40 Q10,20 45,25 Q75,10 85,45 Q95,75 60,85 Q30,100 20,70 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/><circle cx="45" cy="50" r="4" fill="#e0f2fe"/><circle cx="60" cy="40" r="3" fill="#e0f2fe"/></svg>`
+            },
+            {
+                id: 'bcoli_t',
+                name: 'Balantidium coli',
+                stage: 'Trofozoíto',
+                size: '50 - 200 µm',
+                stain: 'Fresco / Lugol',
+                keyFeatures: 'Protozoo ciliado gigante. Presenta citostoma anterior, vacuolas contráctiles y un macronúcleo arriñonado característico junto a un micronúcleo redondo.',
+                pathology: 'Agente patógeno de la Balantidiasis (zoonosis transmitida habitualmente desde cerdos). Produce mucopolisacaridasas e hialuronidasas que ulceran la mucosa del colon, originando cuadros disentéricos severos con riesgo de perforación intestinal.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><ellipse cx="50" cy="60" rx="32" ry="46" fill="#0f766e" stroke="#2dd4bf" stroke-width="2.5"/><path d="M40,45 Q55,40 52,65 Q50,75 42,70 Z" fill="#042f2e" stroke="#99f6e4" stroke-width="1.5"/><circle cx="52" cy="72" r="3" fill="#fde047"/></svg>`
+            },
+            {
+                id: 'bcoli_c',
+                name: 'Balantidium coli',
+                stage: 'Quiste',
+                size: '45 - 65 µm',
+                stain: 'Solución de Lugol',
+                keyFeatures: 'Quiste esférico u ovalado de pared quística gruesa de doble capa. Muestra el macronúcleo arriñonado visible en el interior y cilios retenidos.',
+                pathology: 'Forma infectante de resistencia ambiental. Su transmisión ocurre por ingestión de agua o alimentos contaminados con materia fecal de porcinos u humanos.',
+                svg: `<svg viewBox="0 0 100 120" class="w-full h-full max-h-36"><circle cx="50" cy="60" r="38" fill="#0f766e" stroke="#2dd4bf" stroke-width="3"/><path d="M40,48 Q55,43 52,68 Q50,78 42,73 Z" fill="#042f2e" stroke="#99f6e4" stroke-width="1.5"/></svg>`
+            }
+        ];
+
+        let gameState = { cards: [], flippedCards: [], matchedPairs: 0, totalPairs: 8, moves: 0, timer: null, seconds: 0, isPlaying: false, canFlip: true };
+
+        function switchMode(mode) {
+            document.getElementById('game-view').classList.toggle('hidden', mode !== 'game');
+            document.getElementById('atlas-view').classList.toggle('hidden', mode !== 'atlas');
+            document.getElementById('nav-game').className = mode === 'game' ? "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all bg-teal-500 text-slate-950 shadow-md" : "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all text-slate-400 hover:text-white";
+            document.getElementById('nav-atlas').className = mode === 'atlas' ? "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all bg-teal-500 text-slate-950 shadow-md" : "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all text-slate-400 hover:text-white";
+            if(mode === 'atlas') renderAtlas('all');
+        }
+
+        function initGame() {
+            const numPairs = parseInt(document.getElementById('difficulty-select').value);
+            clearInterval(gameState.timer);
+            gameState = { cards: [], flippedCards: [], matchedPairs: 0, totalPairs: Math.min(numPairs, protozoaData.length), moves: 0, timer: null, seconds: 0, isPlaying: false, canFlip: true };
+
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('timer').textContent = '00:00';
+            document.getElementById('matches').textContent = `0 / ${gameState.totalPairs}`;
+
+            const selectedData = [...protozoaData].sort(() => 0.5 - Math.random()).slice(0, gameState.totalPairs);
+            let deck = [];
+            selectedData.forEach((item) => {
+                deck.push({ ...item, cardId: item.id + '_1', pairId: item.id, type: 'visual' });
+                deck.push({ ...item, cardId: item.id + '_2', pairId: item.id, type: 'info' });
+            });
+
+            deck.sort(() => 0.5 - Math.random());
+            gameState.cards = deck;
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            gameState.cards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card perspective-1000 h-36 sm:h-44 cursor-pointer';
+                cardEl.innerHTML = `
+                    <div class="card-inner relative w-full h-full transform-style-3d rounded-xl border border-slate-800 bg-slate-900 shadow-md hover:border-teal-500/50">
+                        <div class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 rounded-xl border border-slate-800">
+                            <span class="text-2xl sm:text-3xl opacity-30">🔬</span>
+                        </div>
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-slate-900 rounded-xl border border-teal-500/40 p-2 flex flex-col items-center justify-between overflow-hidden">
+                            ${card.type === 'visual' ? `
+                                <div class="w-full h-20 sm:h-24 flex items-center justify-center p-1 bg-slate-950 rounded-lg">${card.svg}</div>
+                                <div class="text-center w-full">
+                                    <span class="text-[10px] font-bold text-teal-400 block truncate">${card.name}</span>
+                                    <span class="text-[9px] text-slate-400 block">${card.stage}</span>
+                                </div>
+                            ` : `
+                                <div class="w-full h-full flex flex-col justify-center items-center text-center p-2 bg-slate-950/60 rounded-lg">
+                                    <span class="text-[9px] text-amber-400 font-bold uppercase mb-1">${card.stage}</span>
+                                    <h4 class="text-xs font-bold text-white mb-1.5 leading-tight">${card.name}</h4>
+                                    <span class="text-[9px] text-cyan-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${card.size}</span>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+                cardEl.addEventListener('click', () => handleCardClick(index));
+                board.appendChild(cardEl);
+            });
+        }
+
+        function handleCardClick(index) {
+            if (!gameState.canFlip) return;
+            const cardEl = document.querySelectorAll('.card')[index];
+            if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched-card')) return;
+
+            if (!gameState.isPlaying) {
+                gameState.isPlaying = true;
+                startTimer();
+            }
+
+            cardEl.classList.add('flipped');
+            gameState.flippedCards.push({ index, card: gameState.cards[index], cardEl });
+
+            if (gameState.flippedCards.length === 2) {
+                gameState.moves++;
+                document.getElementById('moves').textContent = gameState.moves;
+                gameState.canFlip = false;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = gameState.flippedCards;
+            if (card1.card.pairId === card2.card.pairId) {
+                setTimeout(() => {
+                    card1.cardEl.classList.add('matched-card');
+                    card2.cardEl.classList.add('matched-card');
+                    gameState.matchedPairs++;
+                    document.getElementById('matches').textContent = `${gameState.matchedPairs} / ${gameState.totalPairs}`;
+                    showInfoModal(card1.card);
+                    gameState.flippedCards = [];
+                    gameState.canFlip = true;
+                    if (gameState.matchedPairs === gameState.totalPairs) handleWin();
+                }, 400);
+            } else {
+                setTimeout(() => {
+                    card1.cardEl.classList.remove('flipped');
+                    card2.cardEl.classList.remove('flipped');
+                    gameState.flippedCards = [];
+                    gameState.canFlip = true;
+                }, 1000);
+            }
+        }
+
+        function startTimer() {
+            gameState.timer = setInterval(() => {
+                gameState.seconds++;
+                const mins = String(Math.floor(gameState.seconds / 60)).padStart(2, '0');
+                const secs = String(gameState.seconds % 60).padStart(2, '0');
+                document.getElementById('timer').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function showInfoModal(protozoa) {
+            document.getElementById('modal-title').textContent = `${protozoa.name} (${protozoa.stage})`;
+            document.getElementById('modal-img-container').innerHTML = protozoa.svg;
+            document.getElementById('modal-size').textContent = protozoa.size;
+            document.getElementById('modal-stain').textContent = protozoa.stain;
+            document.getElementById('modal-desc').textContent = protozoa.keyFeatures;
+            document.getElementById('modal-pathology').textContent = protozoa.pathology;
+            document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        function closeInfoModal() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
+        function handleWin() {
+            clearInterval(gameState.timer);
+            const studentInput = document.getElementById('student-name').value.trim();
+            const studentName = studentInput !== '' ? studentInput : 'Estudiante (Sin Registro)';
+            
+            const mins = String(Math.floor(gameState.seconds / 60)).padStart(2, '0');
+            const secs = String(gameState.seconds % 60).padStart(2, '0');
+            const accuracy = Math.round((gameState.totalPairs / gameState.moves) * 100);
+
+            document.getElementById('final-student').textContent = studentName;
+            document.getElementById('final-time').textContent = `${mins}:${secs}`;
+            document.getElementById('final-moves').textContent = gameState.moves;
+            document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+
+            document.getElementById('win-modal').classList.remove('hidden');
+        }
+
+        function downloadReport() {
+            const studentName = document.getElementById('final-student').textContent;
+            const time = document.getElementById('final-time').textContent;
+            const moves = document.getElementById('final-moves').textContent;
+            const accuracy = document.getElementById('final-accuracy').textContent;
+            const pairs = gameState.totalPairs;
+            const date = new Date().toLocaleString();
+
+            const content = `====================================================
+COMPROBANTE DE ENTREGA: EVIDENCIA DE APRENDIZAJE
+Práctica Interactiva: Protozoarios Intestinales
+====================================================
+
+Estudiante: ${studentName}
+Fecha de Finalización: ${date}
+
+--- RESULTADOS DE EVALUACIÓN ---
+• Parejas Resueltas: ${pairs} / ${pairs}
+• Tiempo Transcurrido: ${time}
+• Intentos Totales: ${moves}
+• Porcentaje de Efectividad: ${accuracy}
+
+----------------------------------------------------
+Código Único de Verificación: CDC-${Math.random().toString(36).substr(2, 9).toUpperCase()}
+====================================================`;
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Evidencia_Protozoarios_${studentName.replace(/\s+/g, '_')}.txt`;
+            a.click();
+        }
+
+        function renderAtlas(filter) {
+            const container = document.getElementById('atlas-container');
+            container.innerHTML = '';
+            const filtered = filter === 'all' ? protozoaData : protozoaData.filter(i => i.stage.toLowerCase().includes(filter.toLowerCase()));
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row gap-4 hover:border-teal-500/40 transition-colors shadow-md';
+                card.innerHTML = `
+                    <div class="w-full sm:w-32 h-32 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center p-2 flex-shrink-0">${item.svg}</div>
+                    <div class="flex-1 space-y-1.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="font-bold text-white text-sm">${item.name}</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-400">${item.stage}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                            <div><span class="text-slate-500 block">Tamaño:</span> <span class="text-amber-300 font-mono">${item.size}</span></div>
+                            <div><span class="text-slate-500 block">Tinción:</span> <span class="text-cyan-300">${item.stain}</span></div>
+                        </div>
+                        <p class="text-xs text-slate-300 pt-1 leading-relaxed"><strong class="text-teal-400">Morfología:</strong> ${item.keyFeatures}</p>
+                        <p class="text-xs text-slate-400 pt-0.5 leading-relaxed"><strong class="text-rose-400">Patología y Clínica:</strong> ${item.pathology}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filterAtlas(filter) {
+            document.querySelectorAll('.atlas-filter-btn').forEach(btn => {
+                btn.className = btn.dataset.filter === filter 
+                    ? "atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-500 text-slate-950"
+                    : "atlas-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700";
+            });
+            renderAtlas(filter);
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
